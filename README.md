@@ -3,6 +3,13 @@
 </p>
 
 
+# Project Structure
+```
+`-- cli-ux
+    `-- src
+        `-- cli_ux
+```
+
 
 # Development Environment Tutorial
 

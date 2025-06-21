@@ -4,7 +4,13 @@ version = "0.1.0"
 description = "CLI UX for TinkerTasker"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "click>=8.2,<9.0",
+    "loguru>=0.7.0,<1.0",
+    "pendulum>=3.1,<4.0",
+    "pydantic>=2.11,<3.0",
+    "rich>=14.0,<15.0",
+]
 
 [tool.uv]
 package = true
@@ -30,7 +36,7 @@ select = [
     "SIM", # flake8-simplify
     "TID", # flake8-tidy-imports
 ]
-ignore = []
+ignore = ["E501"]
 unfixable = []
 
 [tool.ruff.lint.isort]

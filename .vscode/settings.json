@@ -1,0 +1,18 @@
+{
+    "markdown.extension.orderedList.marker": "one",
+    "ruff.configuration": "./cli-ux/pyproject.toml",
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+        },
+        "editor.defaultFormatter": "charliermarsh.ruff"
+    },
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": [
+        "-s"
+    ],
+    "python.analysis.typeCheckingMode": "standard",
+}

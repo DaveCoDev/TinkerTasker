@@ -5,6 +5,10 @@
 
 # Project Structure
 ```
+.
+|-- ai-core
+|   `-- src
+|       `-- ai_core
 `-- cli-ux
     `-- src
         `-- cli_ux

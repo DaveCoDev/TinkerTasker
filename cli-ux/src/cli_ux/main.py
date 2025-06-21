@@ -106,7 +106,7 @@ async def process_user_message(user_input: str) -> None:
                         ],
                     )
                 )
-                await asyncio.sleep(2)  # Simulate processing delay
+                await asyncio.sleep(0.7)  # Simulate processing delay
                 turn.emit_event(
                     ToolMessage(name="Read", id="call_1", content="File contents read")
                 )

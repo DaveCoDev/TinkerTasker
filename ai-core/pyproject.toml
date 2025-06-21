@@ -1,19 +1,14 @@
 [project]
-name = "cli-ux"
+name = "ai-core"
 version = "0.1.0"
-description = "CLI UX for TinkerTasker"
+description = "AI Logic for TinkerTasker"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "click>=8.2,<9.0",
     "loguru>=0.7.0,<1.0",
     "pendulum>=3.1,<4.0",
     "pydantic>=2.11,<3.0",
-    "rich>=14.0,<15.0",
 ]
-
-[project.scripts]
-tinkertasker = "cli_ux.main:chat"
 
 [tool.uv]
 package = true

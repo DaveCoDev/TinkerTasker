@@ -14,7 +14,6 @@
       "request": "launch",
       "module": "pytest",
       "args": ["${file}"],
-      "cwd": "${workspaceFolder}/service",
       "console": "integratedTerminal"
     }
   ]

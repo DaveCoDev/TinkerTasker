@@ -1,22 +1,24 @@
 {
     "folders": [
         {
-            "name": "ai-core", 
+            "name": "root",
+            "path": "."
+        },
+        {
+            "name": "ai-core",
             "path": "ai-core"
         },
         {
             "name": "cli-ux",
             "path": "cli-ux"
-        },
-        {
-            "name": "root",
-            "path": "."
         }
     ],
     "settings": {
         "python.testing.unittestEnabled": false,
         "python.testing.pytestEnabled": true,
-        "python.testing.pytestArgs": ["-s"],
+        "python.testing.pytestArgs": [
+            "-s"
+        ],
         "python.analysis.typeCheckingMode": "standard",
         "[python]": {
             "editor.formatOnSave": true,
@@ -29,8 +31,9 @@
     },
     "extensions": {
         "recommendations": [
-            "ms-python.python",
             "charliermarsh.ruff",
+            "ms-python.python",
+            "ms-vscode.makefile-tools",
             "yzhang.markdown-all-in-one"
         ]
     }

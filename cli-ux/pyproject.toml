@@ -18,6 +18,15 @@ tinkertasker = "cli_ux.main:chat"
 [tool.uv]
 package = true
 
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+]
+lint = [
+    "ruff",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

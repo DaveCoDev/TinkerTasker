@@ -2,6 +2,12 @@
 <p align="center">TinkerTasker is an open-source, local-first agent that runs in your terminal.
 </p>
 
+# Quickstart
+<todo later this will be how to install it on Windows and Linux>
+
+# Configuration Guide
+<todo later this will be how to customize the project>
+
 
 # Project Structure
 ```
@@ -13,6 +19,21 @@
     `-- src
         `-- cli_ux
 ```
+
+
+# Development
+
+## Prerequisites
+
+- [uv](https://docs.astral.sh/uv/#installation) for Python package management
+- make
+
+## Setup
+
+- `make` - Run all commands below in sequence
+- `make install` - Install and update dependencies for all Python packages
+- `make lint` - Run ruff linting with auto-fix for all packages
+- `make format` - Format code with ruff for all packages
 
 
 # Development Environment Tutorial
@@ -39,3 +60,32 @@
 
 1. Setup [GitHub Copilot](https://code.visualstudio.com/docs/copilot/overview) for auto-completions and for quick questions.
 1. Setup [Claude Code](https://docs.anthropic.com/en/docs/claude-code/setup) and also let it install the VSCode extension.
+
+
+## 4. Open VSCode Workspace
+
+The project includes a VSCode workspace file (`TinkerTasker.code-workspace`) that configures the multi-package setup. Open it for the best development experience:
+
+1. In VSCode, go to File → Open Workspace from File
+2. Select `TinkerTasker.code-workspace`
+
+
+## 5. Setup Development Environment
+
+1. Install dependencies and set up all packages:
+   ```bash
+   make install
+   ```
+
+2. Before committing code, run linting and formatting:
+   ```bash
+   make lint
+   make format
+   ```
+
+3. Or run everything at once:
+   ```bash
+   make
+   ```
+
+The project uses a Makefile to manage multiple Python packages (`ai-core` and `cli-ux`). Each command automatically handles virtual environments and runs the specified operations across all packages.

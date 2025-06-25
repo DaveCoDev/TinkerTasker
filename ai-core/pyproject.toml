@@ -5,6 +5,7 @@ description = "AI Logic for TinkerTasker"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "fastmcp>=2.8,<3.0",
     "loguru>=0.7.0,<1.0",
     "pendulum>=3.1,<4.0",
     "pydantic>=2.11,<3.0",
@@ -62,6 +63,7 @@ addopts = [
 ]
 xfail_strict = true
 asyncio_default_fixture_loop_scope = "function"
+asyncio_mode = "auto"
 filterwarnings = [
     # When running tests, treat warnings as errors (e.g. -Werror).
     # See: https://docs.pytest.org/en/latest/reference/reference.html#confval-filterwarnings

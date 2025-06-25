@@ -2,15 +2,24 @@
     "folders": [
         {
             "name": "root",
-            "path": "."
+            "path": ".",
+            "settings": {
+                "python.testing.pytestEnabled": false
+            }
         },
         {
             "name": "ai-core",
-            "path": "ai-core"
+            "path": "ai-core",
+            "settings": {
+                "python.defaultInterpreterPath": "${workspaceFolder}/.venv"
+            }
         },
         {
             "name": "cli-ux",
-            "path": "cli-ux"
+            "path": "cli-ux",
+            "settings": {
+                "python.defaultInterpreterPath": "${workspaceFolder}/.venv"
+            }
         }
     ],
     "settings": {
@@ -27,7 +36,8 @@
                 "source.organizeImports": "explicit"
             },
             "editor.defaultFormatter": "charliermarsh.ruff"
-        }
+        },
+        "makefile.configureOnOpen": false
     },
     "extensions": {
         "recommendations": [

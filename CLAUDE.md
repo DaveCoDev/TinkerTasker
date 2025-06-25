@@ -53,6 +53,7 @@ Push for extreme simplicity in these areas:
 - Do not include exceessive print and logging statements.
 - You should only use the dependencies in the provided dependency files. If you need to add a new one, ask first.
 - Do not automatically run scripts, tests, or move/rename/delete files. Ask the user to do these tasks.
+- Read in the entirety of files to get the full context
 
 ## Python Development Rules
 - I am using Python version 3.12 on Ubuntu, uv as the package and project manager, and Ruff as a linter and code formatter.

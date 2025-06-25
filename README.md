@@ -13,8 +13,15 @@
 ```
 .
 |-- ai-core
-|   `-- src
-|       `-- ai_core
+|   |-- src
+|   |   `-- ai_core
+|   |       `-- mcp_servers
+|   |           |-- filesystem
+|   |           `-- web
+|   `-- tests
+|       `-- mcp_servers
+|           |-- filesystem
+|           `-- web
 `-- cli-ux
     `-- src
         `-- cli_ux

@@ -5,6 +5,7 @@ description = "CLI UX for TinkerTasker"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "ai-core",
     "click>=8.2,<9.0",
     "loguru>=0.7.0,<1.0",
     "pendulum>=3.1,<4.0",
@@ -20,6 +21,7 @@ package = true
 
 [dependency-groups]
 dev = [
+    "pyright",
     "pytest",
     "pytest-asyncio",
 ]
@@ -30,6 +32,9 @@ lint = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.uv.sources]
+ai-core = { path = "../ai-core", editable = true }
 
 [tool.ruff.lint]
 select = [

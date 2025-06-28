@@ -34,6 +34,8 @@
 
 - [uv](https://docs.astral.sh/uv/#installation) for Python package management
 - make
+- [ollama](https://github.com/ollama/ollama?tab=readme-ov-file#ollama)
+
 
 ## Setup
 

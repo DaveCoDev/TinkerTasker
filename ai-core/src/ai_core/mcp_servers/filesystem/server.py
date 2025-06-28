@@ -137,7 +137,6 @@ async def view(
         view_range (tuple[int, int], optional):  An array of two integers specifying the start (inclusive) and end (inclusive) line numbers to view.
         Line numbers are 1-indexed, and -1 for the end line means read to the end of the file.
         This parameter only applies when viewing files, not directories.
-        max_depth (int, optional): Maximum depth for directory listing (1 = immediate children only, -1 = unlimited). Defaults to 1.
     """
     resolved_path = await resolve_path(ctx, path, cwd_fallback=True)
     if isinstance(resolved_path, str):

@@ -1,13 +1,20 @@
 import asyncio
 from contextlib import suppress
+import logging
+from pathlib import Path
 import time
+import warnings
 
+from ai_core.agent import Agent
+from ai_core.mcp_client import initialize_mcp_client
+from ai_core.schemas import AssistantMessageData, MessageData, ToolMessageData
 import click
+from fastmcp import Client
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt
 
-from cli_ux.types import (
+from cli_ux.schemas import (
     AssistantResponseMessage,
     EventBus,
     MessageEvent,
@@ -16,6 +23,9 @@ from cli_ux.types import (
     TurnContext,
     UserMessage,
 )
+
+warnings.filterwarnings("ignore")
+logging.getLogger().setLevel(logging.CRITICAL)
 
 console = Console()
 
@@ -45,7 +55,9 @@ event_bus.subscribe(handle_event)
 
 @click.command()
 def chat():
-    """Start an interactive chat session with the AI assistant."""
+    mcp_client = initialize_mcp_client(Path.cwd())
+    agent = Agent(mcp_client=mcp_client)
+
     console.print(
         Panel.fit(
             "[bold blue]Welcome to TinkerTasker![/bold blue]\n"
@@ -63,7 +75,7 @@ def chat():
                 break
             if not user_input.strip():
                 continue
-            asyncio.run(process_user_message(user_input))
+            asyncio.run(process_user_message(user_input, mcp_client, agent))
         except KeyboardInterrupt:
             global last_interrupt_time
             current_time = time.time()
@@ -75,7 +87,25 @@ def chat():
             break
 
 
-async def process_user_message(user_input: str) -> None:
+def convert_data_to_event(data: MessageData) -> MessageEvent:
+    """Convert MessageData schemas from the ai core Agent to the cli's MessageEvent schemas."""
+    if isinstance(data, AssistantMessageData):
+        tool_calls = [
+            ToolCall(name=tc.name, id=tc.id, args=str(tc.args))
+            for tc in data.tool_calls
+        ]
+        return AssistantResponseMessage(message=data.message, tool_calls=tool_calls)
+    elif isinstance(data, ToolMessageData):
+        return ToolMessage(name=data.name, id=data.id, content=data.content)
+    else:
+        return AssistantResponseMessage(
+            message="Something went wrong, no data received from the agent"
+        )
+
+
+async def process_user_message(
+    user_input: str, mcp_client: Client, agent: Agent
+) -> None:
     """Process user message using EventBus and TurnContext."""
     with console.status(
         "working... (0.0s ctrl+c to interrupt)", spinner="dots"
@@ -86,30 +116,17 @@ async def process_user_message(user_input: str) -> None:
             while True:
                 elapsed = time.time() - start_time
                 status.update(f"working... ({elapsed:.1f}s ctrl+c to interrupt)")
-                await asyncio.sleep(0.05)
+                await asyncio.sleep(0)
 
         status_task = asyncio.create_task(update_status())
 
         try:
             async with TurnContext(event_bus) as turn:
                 turn.emit_event(UserMessage(content=user_input))
-                await asyncio.sleep(1.3)  # Simulate processing delay
-                turn.emit_event(
-                    AssistantResponseMessage(
-                        message="I'll help you with that task.",
-                        tool_calls=[
-                            ToolCall(
-                                name="Read",
-                                id="call_1",
-                                args="file_path='/path/to/file.py'",
-                            )
-                        ],
-                    )
-                )
-                await asyncio.sleep(0.7)  # Simulate processing delay
-                turn.emit_event(
-                    ToolMessage(name="Read", id="call_1", content="File contents read")
-                )
+                async with mcp_client:
+                    async for event in agent.turn(user_input):
+                        turn.emit_event(convert_data_to_event(event))
+                        await asyncio.sleep(0)
         finally:
             status_task.cancel()
             with suppress(asyncio.CancelledError):

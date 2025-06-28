@@ -1,4 +1,9 @@
 {
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/",
     "python.terminal.activateEnvironment": true,
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": [
+        "-s"
+    ],
 }

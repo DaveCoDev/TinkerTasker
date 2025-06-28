@@ -6,11 +6,13 @@ from fastmcp import Client, FastMCP
 import mcp.types
 from pydantic import FileUrl
 
+from ai_core.agent import Agent
 from ai_core.mcp_servers.filesystem.server import mcp as filesystem_server
 from ai_core.mcp_servers.web.server import mcp as web_server
+from ai_core.schemas import AssistantMessageData, ToolMessageData
 
 
-async def connect_to_servers(workspace_path: Path):
+def initialize_mcp_client(workspace_path: Path) -> Client:
     composed_mcp = FastMCP()
 
     # Note: If we want to prefix the tool names with the server name, use the `prefix` argument
@@ -21,17 +23,31 @@ async def connect_to_servers(workspace_path: Path):
         composed_mcp,
         roots=[
             mcp.types.Root(
-                uri=FileUrl(f"file://{workspace_path.absolute()}"),
+                uri=FileUrl(f"file://{workspace_path}"),
                 name="Working Directory",
             )
         ],
     )
-    async with client:
-        tools = await client.list_tools()
-        print("Available tools:\n", tools)
+    return client
 
-        result = await client.call_tool("view", {"path": "."})
-        print("Filesystem view:\n", result)
+
+async def _main(workspace_path: Path):
+    """Example usage"""
+    client = initialize_mcp_client(workspace_path)
+    agent = Agent(mcp_client=client)
+
+    async with client:
+        async for event in agent.turn(
+            "Can you look what files are in my working directory summarize the first two you see?",
+        ):
+            if isinstance(event, AssistantMessageData):
+                if event.message:
+                    print(f"Assistant: {event.message}")
+                if event.tool_calls:
+                    for tool_call in event.tool_calls:
+                        print(f"Tool call: {tool_call.name}({tool_call.args})")
+            elif isinstance(event, ToolMessageData):
+                print(f"Tool result ({event.name}): {event.content}")
 
 
 if __name__ == "__main__":
@@ -43,4 +59,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    asyncio.run(connect_to_servers(args.work_dir))
+    asyncio.run(_main(args.work_dir))

@@ -1,3 +1,11 @@
 {
-    "markdown.extension.orderedList.marker": "one"
+    "python.analysis.typeCheckingMode": "standard",
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+        },
+        "editor.defaultFormatter": "charliermarsh.ruff"
+    },
 }

@@ -7,6 +7,7 @@ import mcp.types
 from pydantic import FileUrl
 
 from ai_core.agent import Agent
+from ai_core.config import AgentConfig
 from ai_core.mcp_servers.filesystem.server import mcp as filesystem_server
 from ai_core.mcp_servers.web.server import mcp as web_server
 from ai_core.schemas import AssistantMessageData, ToolMessageData
@@ -34,7 +35,7 @@ def initialize_mcp_client(workspace_path: Path) -> Client:
 async def _main(workspace_path: Path):
     """Example usage"""
     client = initialize_mcp_client(workspace_path)
-    agent = Agent(mcp_client=client)
+    agent = Agent(mcp_client=client, config=AgentConfig())
 
     async with client:
         async for event in agent.turn(

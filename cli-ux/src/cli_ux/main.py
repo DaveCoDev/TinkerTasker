@@ -11,9 +11,12 @@ from ai_core.schemas import AssistantMessageData, MessageData, ToolMessageData
 import click
 from fastmcp import Client
 from rich.console import Console
+from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.prompt import Prompt
+from rich.table import Table
 
+from cli_ux.config import get_config_path, load_config
 from cli_ux.schemas import (
     AssistantResponseMessage,
     EventBus,
@@ -27,7 +30,7 @@ from cli_ux.schemas import (
 warnings.filterwarnings("ignore")
 logging.getLogger().setLevel(logging.CRITICAL)
 
-console = Console()
+console = Console(width=120)
 
 # Global state for double Ctrl+C detection
 last_interrupt_time = 0
@@ -39,38 +42,55 @@ event_bus = EventBus()
 def handle_event(event: MessageEvent) -> None:
     """Handle events by displaying them in the console."""
     if isinstance(event, UserMessage):
-        # User messages are displayed when typed, not when processed
-        pass
+        console.print()
     elif isinstance(event, AssistantResponseMessage):
         if event.message:
-            console.print(f"● {event.message}")
-        # Tool calls will be displayed as separate ToolMessage events
+            # Use Rich's Table to align dot and content properly
+            # Create a table with no borders for layout
+            table = Table(show_header=False, show_edge=False, box=None, padding=0)
+            table.add_column(width=2, no_wrap=True)  # For the dot
+            table.add_column()  # For the content
+            table.add_row("●", Markdown(event.message.strip()))
+            console.print(table)
+            console.print()
+    # Tool calls will be displayed as separate ToolMessage events
     elif isinstance(event, ToolMessage):
-        console.print(f"[green]●[/green] {event.name}(id={event.id})")
-        console.print(f"\t{event.content}")
+        # Get first line of content only
+        first_line = event.content.split("\n")[0].strip()
+        console.print(f"[green]●[/green] {event.name}(.)")
+        console.print(f"  ⎿  {first_line}")
+        console.print()
 
 
 event_bus.subscribe(handle_event)
 
 
-@click.command()
-def chat():
-    mcp_client = initialize_mcp_client(Path.cwd())
-    agent = Agent(mcp_client=mcp_client)
-
+def initial_message(working_dir: Path) -> None:
     console.print(
         Panel.fit(
-            "[bold blue]Welcome to TinkerTasker![/bold blue]\n"
-            "Your local-first AI assistant.\n\n"
-            "[dim]Type 'quit' or 'exit' to end the conversation.[/dim]",
+            "[bold #8BC6FC]Welcome to TinkerTasker![/bold #8BC6FC]\n\n"
+            f"[dim]Config: {get_config_path()}[/dim]\n"
+            f"[dim]Working Directory: {working_dir}[/dim]\n\n"
+            "[dim]Press CTRL+C twice to quit.[/dim]",
             title="TinkerTasker",
-            border_style="blue",
+            border_style="#8BC6FC",
         )
     )
 
+
+@click.command()
+def chat():
+    config = load_config()
+    working_dir = Path.cwd()
+    mcp_client = initialize_mcp_client(working_dir)
+    agent = Agent(mcp_client=mcp_client, config=config.agent_config)
+
+    initial_message(working_dir)
+
     while True:
         try:
-            user_input = Prompt.ask("\n[bold green]>[/bold green]")
+            user_input = Prompt.ask("[bold green]>[/bold green]")
+            user_input = user_input.strip()
             if user_input.lower() in ["quit", "exit"]:
                 break
             if not user_input.strip():

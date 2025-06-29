@@ -7,17 +7,17 @@ from openai.types.chat import (
     ChatCompletionToolMessageParam,
 )
 
+from ai_core.config import AgentConfig
 from ai_core.litellm_models import litellm_ollama_completion, strip_thinking
 from ai_core.mcp_utils import mcp_tool_to_openai, parse_tool_call_content
 from ai_core.prompts import AGENT_SYSTEM_PROMPT
 from ai_core.schemas import Message, MessageData, MessageHistory, create_message_data
 
-MAX_STEPS = 10
-
 
 class Agent:
-    def __init__(self, mcp_client: Client) -> None:
+    def __init__(self, mcp_client: Client, config: AgentConfig) -> None:
         self.mcp_client = mcp_client
+        self.config = config
         self.message_history = MessageHistory()
         self.message_history.messages.append(
             Message(
@@ -68,13 +68,15 @@ class Agent:
             )
         )
 
-        for _ in range(MAX_STEPS):
+        for _ in range(self.config.max_steps):
             # Get the assistant response
             response = await litellm_ollama_completion(
-                model="ollama_chat/qwen3:30b-a3b-q4_K_M",
+                model=self.config.llm_config.model_name,
                 messages=self.message_history.get_messages(),
+                num_ctx=self.config.llm_config.num_ctx,
+                num_predict=self.config.llm_config.max_completion_tokens,
                 tools=mcp_tools,
-                temperature=0.7,
+                temperature=self.config.llm_config.temperature,
             )
             assistant_response = response.choices[0].message
             assistant_response["content"] = strip_thinking(

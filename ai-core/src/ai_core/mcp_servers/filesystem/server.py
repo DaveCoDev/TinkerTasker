@@ -125,8 +125,8 @@ async def validate_file_for_editing(ctx: Context, path: str) -> tuple[Path, str]
 
 
 mcp = FastMCP(
-    name="FilesystemServer",
-    instructions="""This server provides the ability to interact with the local filesystem.""",
+    name="Filesystem",
+    instructions="""Provides the ability to interact with the local filesystem.""",
 )
 
 
@@ -232,7 +232,7 @@ async def insert(ctx: Context, path: str, insert_line: int, new_str: str) -> str
 
         # Build the output showing line numbers and content (like Edit tool)
         output_lines = [
-            f"Successfully inserted text at line {insert_line} in {resolved_path}:"
+            f"Successfully inserted text at line {insert_line} in {resolved_path}"
         ]
         for i, line in enumerate(selected_lines):
             line_num = line_offset + i + 1
@@ -308,7 +308,7 @@ async def str_replace(
         # Build the output showing line numbers and content
         if replace_all:
             output_lines = [
-                f"Successfully replaced {replacement_count} occurrences in {resolved_path}:"
+                f"Successfully replaced {replacement_count} occurrences in {resolved_path}"
             ]
         else:
             output_lines = [f"Successfully replaced text in {resolved_path}:"]

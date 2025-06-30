@@ -1,11 +1,14 @@
 from collections.abc import AsyncGenerator
 import json
+from pathlib import Path
 
 from fastmcp import Client
+from liquid import render
 from openai.types.chat import (
     ChatCompletionMessageToolCallParam,
     ChatCompletionToolMessageParam,
 )
+import pendulum
 
 from ai_core.config import AgentConfig
 from ai_core.litelllm_completion import (
@@ -18,16 +21,44 @@ from ai_core.prompts import AGENT_SYSTEM_PROMPT
 from ai_core.schemas import Message, MessageData, MessageHistory, create_message_data
 
 
+def _compile_system_prompt(
+    knowledge_cutoff: str,
+    timezone: str,
+    working_directory: Path,
+    mcp_instructions: str,
+) -> str:
+    system_prompt = render(
+        AGENT_SYSTEM_PROMPT,
+        knowledge_cutoff=knowledge_cutoff,
+        current_date=pendulum.now(tz=timezone).format("YYYY-MM-DD"),
+        working_directory=working_directory,
+        mcp_instructions=mcp_instructions,
+    )
+    return system_prompt
+
+
 class Agent:
-    def __init__(self, mcp_client: Client, config: AgentConfig) -> None:
+    def __init__(
+        self,
+        mcp_client: Client,
+        config: AgentConfig,
+        working_directory: Path,
+        mcp_instructions: str,
+    ) -> None:
         self.mcp_client = mcp_client
         self.config = config
         self.message_history = MessageHistory()
+
         self.message_history.messages.append(
             Message(
                 chat_completion_message_param={
                     "role": "system",
-                    "content": AGENT_SYSTEM_PROMPT,
+                    "content": _compile_system_prompt(
+                        knowledge_cutoff=self.config.prompt_config.knowledge_cutoff,
+                        timezone=self.config.prompt_config.timezone,
+                        working_directory=working_directory,
+                        mcp_instructions=mcp_instructions,
+                    ),
                 }
             )
         )

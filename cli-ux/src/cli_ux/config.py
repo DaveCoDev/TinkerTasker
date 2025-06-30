@@ -12,6 +12,10 @@ class UXConfig(BaseModel):
         default=1,
         description="number of lines to display for tool outputs. -1 for all",
     )
+    max_arg_value_length: int = Field(
+        default=100,
+        description="maximum length of argument values to display in tool calls",
+    )
 
 
 class CLIConfig(BaseModel):

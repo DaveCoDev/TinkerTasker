@@ -14,7 +14,21 @@ from ai_core.schemas import AssistantMessageData, ToolMessageData
 
 
 def initialize_mcp_client(workspace_path: Path) -> Client:
-    composed_mcp = FastMCP()
+    instructions_parts = []
+    for server in [filesystem_server, web_server]:
+        if hasattr(server, "instructions") and server.instructions:
+            server_name = getattr(server, "name", "Unknown")
+            instructions_parts.append(
+                f"### {server_name} Server\n{server.instructions}"
+            )
+    combined_instructions = (
+        "\n\n".join(instructions_parts) if instructions_parts else None
+    )
+
+    composed_mcp = FastMCP(
+        name="Native MCP Servers\nThese servers are provided by default by TinkerTasker.",
+        instructions=combined_instructions,
+    )
 
     # Note: If we want to prefix the tool names with the server name, use the `prefix` argument
     composed_mcp.mount(web_server)
@@ -32,12 +46,31 @@ def initialize_mcp_client(workspace_path: Path) -> Client:
     return client
 
 
+async def initialize_mcp_servers(
+    client: Client, result: mcp.types.InitializeResult
+) -> str:
+    await client.ping()
+    result = client.initialize_result
+
+    mcp_instructions = "\n".join(
+        ["## " + result.serverInfo.name, "", result.instructions or ""]
+    )
+    return mcp_instructions.strip()
+
+
 async def _main(workspace_path: Path):
     """Example usage"""
     client = initialize_mcp_client(workspace_path)
-    agent = Agent(mcp_client=client, config=AgentConfig())
-
     async with client:
+        mcp_instructions = await initialize_mcp_servers(
+            client, client.initialize_result
+        )
+        agent = Agent(
+            mcp_client=client,
+            config=AgentConfig(),
+            working_directory=workspace_path,
+            mcp_instructions=mcp_instructions,
+        )
         async for event in agent.turn(
             "Can you look what files are in my working directory summarize the first two you see?",
         ):

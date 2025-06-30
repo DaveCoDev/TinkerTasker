@@ -23,45 +23,47 @@ def initial_message(working_dir: Path, console: Console) -> None:
     )
 
 
-def format_tool_arguments(args: str) -> str:
+def format_tool_arguments(args: str, max_arg_value_length: int = 50) -> str:
     """Format tool arguments for display."""
     if not args or args.strip() == "{}":
         return "()"
 
-    try:
-        # First try ast.literal_eval for Python dict format like {'key': 'value'}
-        parsed_args = ast.literal_eval(args)
+    def format_parsed_args(parsed_args: dict) -> str:
+        """Helper function to format parsed arguments."""
         if not parsed_args:
             return "()"
 
-        # Format as key=value pairs
         formatted_pairs = []
         for key, value in parsed_args.items():
+            # Convert to string and normalize whitespace
+            value_str = str(value)
+            cleaned_value = " ".join(value_str.split())
+            
+            # Truncate if needed
+            truncated_value = (
+                cleaned_value[:max_arg_value_length] + "..."
+                if len(cleaned_value) > max_arg_value_length
+                else cleaned_value
+            )
+            
+            # Add quotes for string values
             if isinstance(value, str):
-                formatted_pairs.append(f'{key}="{value}"')
+                formatted_pairs.append(f'{key}="{truncated_value}"')
             else:
-                formatted_pairs.append(f"{key}={value}")
+                formatted_pairs.append(f"{key}={truncated_value}")
 
         return f"({', '.join(formatted_pairs)})"
-    except (ValueError, SyntaxError):
-        # If ast.literal_eval fails, try JSON format
+
+    # Try parsing with ast.literal_eval first, then JSON
+    for parser in [ast.literal_eval, json.loads]:
         try:
-            parsed_args = json.loads(args)
-            if not parsed_args:
-                return "()"
-
-            # Format as key=value pairs
-            formatted_pairs = []
-            for key, value in parsed_args.items():
-                if isinstance(value, str):
-                    formatted_pairs.append(f'{key}="{value}"')
-                else:
-                    formatted_pairs.append(f"{key}={value}")
-
-            return f"({', '.join(formatted_pairs)})"
-        except (json.JSONDecodeError, AttributeError):
-            # If both fail, return as-is in parentheses
-            return f"({args})" if args else "()"
+            parsed_args = parser(args)
+            return format_parsed_args(parsed_args)
+        except (ValueError, SyntaxError, json.JSONDecodeError, AttributeError):
+            continue
+    
+    # If both parsers fail, return as-is
+    return f"({args})" if args else "()"
 
 
 def convert_data_to_event(data: MessageData) -> MessageEvent:

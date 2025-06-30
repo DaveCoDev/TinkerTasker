@@ -6,7 +6,7 @@ import time
 import warnings
 
 from ai_core.agent import Agent
-from ai_core.mcp_client import initialize_mcp_client
+from ai_core.mcp_client import initialize_mcp_client, initialize_mcp_servers
 import click
 from fastmcp import Client
 from rich.console import Console
@@ -68,7 +68,11 @@ def handle_event(event: MessageEvent, config: CLIConfig) -> None:
     elif isinstance(event, ToolMessage):
         # Get tool arguments from cached tool call
         tool_call = _tool_calls_cache.get(event.id)
-        args_display = format_tool_arguments(tool_call.args) if tool_call else "()"
+        args_display = (
+            format_tool_arguments(tool_call.args, config.ux_config.max_arg_value_length)
+            if tool_call
+            else "()"
+        )
         console.print(f"[green]●[/green] {event.name}{args_display}")
 
         lines = event.content.split("\n")
@@ -85,14 +89,38 @@ def handle_event(event: MessageEvent, config: CLIConfig) -> None:
 event_bus.subscribe(handle_event)
 
 
+async def initialize_agent(
+    mcp_client: Client,
+    working_directory: Path,
+    config: CLIConfig,
+) -> Agent:
+    async with mcp_client:
+        mcp_instructions = await initialize_mcp_servers(
+            mcp_client, mcp_client.initialize_result
+        )
+
+        agent = Agent(
+            mcp_client=mcp_client,
+            config=config.agent_config,
+            working_directory=working_directory,
+            mcp_instructions=mcp_instructions,
+        )
+        return agent
+
+
 @click.command()
 def chat():
     working_dir = Path.cwd()
     mcp_client = initialize_mcp_client(working_dir)
-    agent = Agent(mcp_client=mcp_client, config=config.agent_config)
+    agent = asyncio.run(
+        initialize_agent(
+            mcp_client=mcp_client,
+            working_directory=working_dir,
+            config=config,
+        )
+    )
 
     initial_message(working_dir, console)
-
     while True:
         try:
             user_input = Prompt.ask("[bold green]>[/bold green]")

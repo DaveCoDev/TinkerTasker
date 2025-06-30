@@ -3,13 +3,21 @@ from pathlib import Path
 import platform
 
 from ai_core.config import AgentConfig
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import yaml
+
+
+class UXConfig(BaseModel):
+    number_tool_lines: int = Field(
+        default=1,
+        description="number of lines to display for tool outputs. -1 for all",
+    )
 
 
 class CLIConfig(BaseModel):
     version: str = "0.1.0"
     agent_config: AgentConfig = AgentConfig()
+    ux_config: UXConfig = UXConfig()
 
 
 def get_config_path() -> Path:

@@ -6,14 +6,12 @@ from openai.types.chat import ChatCompletionToolParam
 
 def mcp_tool_to_openai(tool: mcp.types.Tool) -> ChatCompletionToolParam:
     parameters = tool.inputSchema or {}
-    parameters["additionalProperties"] = False
     openai_tool: ChatCompletionToolParam = ChatCompletionToolParam(
         type="function",
         function={
             "name": tool.name,
             "description": tool.description or "",
             "parameters": parameters,
-            "strict": True,
         },
     )
     return openai_tool

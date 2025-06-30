@@ -7,16 +7,14 @@ import warnings
 
 from ai_core.agent import Agent
 from ai_core.mcp_client import initialize_mcp_client
-from ai_core.schemas import AssistantMessageData, MessageData, ToolMessageData
 import click
 from fastmcp import Client
 from rich.console import Console
 from rich.markdown import Markdown
-from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.table import Table
 
-from cli_ux.config import get_config_path, load_config
+from cli_ux.config import CLIConfig, load_config
 from cli_ux.schemas import (
     AssistantResponseMessage,
     EventBus,
@@ -26,6 +24,13 @@ from cli_ux.schemas import (
     TurnContext,
     UserMessage,
 )
+from cli_ux.ux_utils import (
+    convert_data_to_event,
+    format_tool_arguments,
+    initial_message,
+)
+
+config = load_config()
 
 warnings.filterwarnings("ignore")
 logging.getLogger().setLevel(logging.CRITICAL)
@@ -36,14 +41,21 @@ console = Console(width=120)
 last_interrupt_time = 0
 DOUBLE_INTERRUPT_THRESHOLD = 0.5
 
-event_bus = EventBus()
+event_bus = EventBus(config=config)
+
+# Store tool calls to link with tool messages
+_tool_calls_cache: dict[str, ToolCall] = {}
 
 
-def handle_event(event: MessageEvent) -> None:
+def handle_event(event: MessageEvent, config: CLIConfig) -> None:
     """Handle events by displaying them in the console."""
     if isinstance(event, UserMessage):
         console.print()
     elif isinstance(event, AssistantResponseMessage):
+        # Cache tool calls for later linking with tool messages
+        for tool_call in event.tool_calls:
+            _tool_calls_cache[tool_call.id] = tool_call
+
         if event.message:
             # Use Rich's Table to align dot and content properly
             # Create a table with no borders for layout
@@ -53,39 +65,33 @@ def handle_event(event: MessageEvent) -> None:
             table.add_row("●", Markdown(event.message.strip()))
             console.print(table)
             console.print()
-    # Tool calls will be displayed as separate ToolMessage events
     elif isinstance(event, ToolMessage):
-        # Get first line of content only
-        first_line = event.content.split("\n")[0].strip()
-        console.print(f"[green]●[/green] {event.name}(.)")
-        console.print(f"  ⎿  {first_line}")
+        # Get tool arguments from cached tool call
+        tool_call = _tool_calls_cache.get(event.id)
+        args_display = format_tool_arguments(tool_call.args) if tool_call else "()"
+        console.print(f"[green]●[/green] {event.name}{args_display}")
+
+        lines = event.content.split("\n")
+        max_lines = config.ux_config.number_tool_lines
+        # Show all lines if config is -1, otherwise limit to configured amount
+        num_lines = len(lines) if max_lines == -1 else min(max_lines, len(lines))
+
+        for i, line in enumerate(lines[:num_lines]):
+            prefix = "  ⎿  " if i == 0 else "     "
+            console.print(f"{prefix}{line.strip()}")
         console.print()
 
 
 event_bus.subscribe(handle_event)
 
 
-def initial_message(working_dir: Path) -> None:
-    console.print(
-        Panel.fit(
-            "[bold #8BC6FC]Welcome to TinkerTasker![/bold #8BC6FC]\n\n"
-            f"[dim]Config: {get_config_path()}[/dim]\n"
-            f"[dim]Working Directory: {working_dir}[/dim]\n\n"
-            "[dim]Press CTRL+C twice to quit.[/dim]",
-            title="TinkerTasker",
-            border_style="#8BC6FC",
-        )
-    )
-
-
 @click.command()
 def chat():
-    config = load_config()
     working_dir = Path.cwd()
     mcp_client = initialize_mcp_client(working_dir)
     agent = Agent(mcp_client=mcp_client, config=config.agent_config)
 
-    initial_message(working_dir)
+    initial_message(working_dir, console)
 
     while True:
         try:
@@ -105,22 +111,6 @@ def chat():
             continue
         except EOFError:
             break
-
-
-def convert_data_to_event(data: MessageData) -> MessageEvent:
-    """Convert MessageData schemas from the ai core Agent to the cli's MessageEvent schemas."""
-    if isinstance(data, AssistantMessageData):
-        tool_calls = [
-            ToolCall(name=tc.name, id=tc.id, args=str(tc.args))
-            for tc in data.tool_calls
-        ]
-        return AssistantResponseMessage(message=data.message, tool_calls=tool_calls)
-    elif isinstance(data, ToolMessageData):
-        return ToolMessage(name=data.name, id=data.id, content=data.content)
-    else:
-        return AssistantResponseMessage(
-            message="Something went wrong, no data received from the agent"
-        )
 
 
 async def process_user_message(

@@ -4,6 +4,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from cli_ux.config import CLIConfig
+
 
 class UserMessage(BaseModel):
     content: str
@@ -32,15 +34,16 @@ MessageEvent = UserMessage | AssistantResponseMessage | ToolMessage
 class EventBus:
     """Simple event bus for publishing and subscribing to message events."""
 
-    def __init__(self):
-        self._subscribers: list[Callable[[MessageEvent], None]] = []
+    def __init__(self, config: "CLIConfig"):
+        self._subscribers: list[Callable[[MessageEvent, CLIConfig], None]] = []
+        self._config = config
 
-    def subscribe(self, handler: Callable[[MessageEvent], None]) -> None:
+    def subscribe(self, handler: Callable[[MessageEvent, "CLIConfig"], None]) -> None:
         self._subscribers.append(handler)
 
     def publish(self, event: MessageEvent) -> None:
         for handler in self._subscribers:
-            handler(event)
+            handler(event, self._config)
 
 
 class TurnContext:

@@ -66,12 +66,14 @@ def format_directory_tree(path: Path, max_depth: int = 1) -> str:
         max_depth: Maximum depth to traverse (1 = immediate children only, -1 = unlimited)
     """
     lines = [f"- {path}/"]
+    path_count = 0
     try:
         if max_depth == 1:
             # Use iterdir() for immediate children only
             for item in sorted(path.iterdir()):
                 name = item.name + ("/" if item.is_dir() else "")
                 lines.append(f"  - {name}")
+                path_count += 1
         else:
             # Use rglob() for recursive traversal
             for item in sorted(path.rglob("*")):
@@ -85,9 +87,14 @@ def format_directory_tree(path: Path, max_depth: int = 1) -> str:
                 indent = "  " * depth
                 name = item.name + ("/" if item.is_dir() else "")
                 lines.append(f"{indent}- {name}")
+                path_count += 1
     except PermissionError:
         lines.append("  (Permission denied)")
-    return "\n".join(lines)
+
+    if path_count == 0:
+        return "The directory is empty"
+    result = f"Listed {path_count} paths\n" + "\n".join(lines)
+    return result
 
 
 async def validate_file_for_editing(ctx: Context, path: str) -> tuple[Path, str] | str:
@@ -127,16 +134,19 @@ mcp = FastMCP(
 async def view(
     ctx: Context,
     path: str,
-    view_range: tuple[int, int] | None = None,
+    start_line: int = 1,
+    end_line: int = -1,
 ) -> str:
     """The view command examines the contents of a file or list the contents of a directory.
     It can read the entire file or a specific range of lines.
 
     Args:
         path (str): The path to the file or directory to view, which can be absolute or relative to the working directory.
-        view_range (tuple[int, int], optional):  An array of two integers specifying the start (inclusive) and end (inclusive) line numbers to view.
-        Line numbers are 1-indexed, and -1 for the end line means read to the end of the file.
-        This parameter only applies when viewing files, not directories.
+        start_line (int): The starting line number to view (1-indexed, inclusive).
+        end_line (int): The ending line number to view (1-indexed, inclusive). Use -1 to read to the end of the file.
+
+    Note:
+        Line numbers are 1-indexed. This parameter only applies when viewing files, not directories.
     """
     resolved_path = await resolve_path(ctx, path, cwd_fallback=True)
     if isinstance(resolved_path, str):
@@ -150,16 +160,15 @@ async def view(
 
         content = resolved_path.read_text(encoding="utf-8")
         lines = content.splitlines()
-        if view_range:
-            start_line, end_line = view_range
-            # Convert to 0-indexed
-            start_idx = max(0, start_line - 1)
-            end_idx = len(lines) if end_line == -1 else min(len(lines), end_line)
-            selected_lines = lines[start_idx:end_idx]
-            line_offset = start_idx
-        else:
-            selected_lines = lines
-            line_offset = 0
+
+        if not lines:
+            return "The file is empty"
+
+        # Convert to 0-indexed
+        start_idx = max(0, start_line - 1)
+        end_idx = len(lines) if end_line == -1 else min(len(lines), end_line)
+        selected_lines = lines[start_idx:end_idx]
+        line_offset = start_idx
 
         # Keeps the line numbers aligned
         max_line_num = line_offset + len(selected_lines)
@@ -169,7 +178,10 @@ async def view(
         for i, line in enumerate(selected_lines):
             line_num = line_offset + i + 1
             numbered_lines.append(f"{line_num:>{width}}→{line}")
-        return "\n".join(numbered_lines)
+
+        lines_read = len(selected_lines)
+        result = f"Read {lines_read} lines\n" + "\n".join(numbered_lines)
+        return result
     except UnicodeDecodeError:
         return f"Error: This tool cannot read binary files. The file appears to be a binary {resolved_path.suffix} file"
     except PermissionError:

@@ -3,7 +3,27 @@
 </p>
 
 # Quickstart
-<todo later this will be how to install it on Windows and Linux>
+1. Pre-requisites
+  - Install [uv](https://docs.astral.sh/uv/getting-started/installation/) to manage Python environments
+  - Install [Ollama](https://github.com/ollama/ollama?tab=readme-ov-file#ollama) (or another LLM provider - detailed instructions coming soon)
+  - Pull the default model from Ollama:
+    ```bash
+    ollama run qwen3:30b-a3b-q4_K_M
+    ```
+    You can configure other models in the `config.yaml` that is generated (the CLI will show you a path).
+
+2. Install as a uv tool
+
+```bash
+uv tool install <github repo url>
+```
+
+3. Run the CLI. It will use the current directory as the working directory which enables file editing. **Use at your own risk!**
+
+```bash
+uv run tinkertasker
+```
+
 
 # Configuration Guide
 <todo later this will be how to customize the project>

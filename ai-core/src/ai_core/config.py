@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -13,9 +15,20 @@ class PromptConfig(BaseModel):
     timezone: str = "America/New_York"
 
 
+class MCPServerConfig(BaseModel):
+    identifier: str
+    command: str
+    args: list[str] = []
+    prefix: str | None = None
+
+
 class AgentConfig(BaseModel):
     max_steps: int = 25
 
     llm_config: LLMConfig = LLMConfig()
 
     prompt_config: PromptConfig = PromptConfig()
+
+    native_mcp_servers: set[Literal["filesystem", "web"]] = {"filesystem", "web"}
+
+    mcp_servers: list[MCPServerConfig] = []

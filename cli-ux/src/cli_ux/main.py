@@ -6,9 +6,8 @@ import time
 import warnings
 
 from ai_core.agent import Agent
-from ai_core.mcp_client import initialize_mcp_client, initialize_mcp_servers
+from ai_core.mcp_client import initialize_mcp_client
 import click
-from fastmcp import Client
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.prompt import Prompt
@@ -37,10 +36,6 @@ logging.getLogger().setLevel(logging.CRITICAL)
 
 console = Console(width=120)
 
-# Global state for double Ctrl+C detection
-last_interrupt_time = 0
-DOUBLE_INTERRUPT_THRESHOLD = 0.5
-
 event_bus = EventBus(config=config)
 
 # Store tool calls to link with tool messages
@@ -48,7 +43,7 @@ _tool_calls_cache: dict[str, ToolCall] = {}
 
 
 def handle_event(event: MessageEvent, config: CLIConfig) -> None:
-    """Handle events by displaying them in the console."""
+    """Handle events (assistant outputs) by displaying them in the console."""
     if isinstance(event, UserMessage):
         console.print()
     elif isinstance(event, AssistantResponseMessage):
@@ -89,61 +84,63 @@ def handle_event(event: MessageEvent, config: CLIConfig) -> None:
 event_bus.subscribe(handle_event)
 
 
-async def initialize_agent(
-    mcp_client: Client,
-    working_directory: Path,
-    config: CLIConfig,
-) -> Agent:
-    async with mcp_client:
-        mcp_instructions = await initialize_mcp_servers(
-            mcp_client, mcp_client.initialize_result
-        )
-
-        agent = Agent(
-            mcp_client=mcp_client,
-            config=config.agent_config,
-            working_directory=working_directory,
-            mcp_instructions=mcp_instructions,
-        )
-        return agent
-
-
 @click.command()
 def chat():
     working_dir = Path.cwd()
-    mcp_client = initialize_mcp_client(working_dir)
-    agent = asyncio.run(
-        initialize_agent(
-            mcp_client=mcp_client,
-            working_directory=working_dir,
-            config=config,
-        )
-    )
 
-    initial_message(working_dir, console)
-    while True:
-        try:
-            user_input = Prompt.ask("[bold green]>[/bold green]")
-            user_input = user_input.strip()
-            if user_input.lower() in ["quit", "exit"]:
-                break
-            if not user_input.strip():
-                continue
-            asyncio.run(process_user_message(user_input, mcp_client, agent))
-        except KeyboardInterrupt:
-            global last_interrupt_time
-            current_time = time.time()
-            if current_time - last_interrupt_time < DOUBLE_INTERRUPT_THRESHOLD:
-                break
-            last_interrupt_time = current_time
-            continue
-        except EOFError:
-            break
+    async def setup_and_chat():
+        with console.status(
+            "🔧 [bold blue]Initializing TinkerTasker MCP Client...[/bold blue]",
+            spinner="dots",
+        ):
+            mcp_client, mcp_instructions = await initialize_mcp_client(
+                working_dir, config.agent_config
+            )
+        async with mcp_client:
+            click.clear()
+            with console.status(
+                "🔧 [bold blue]Initializing TinkerTasker Tools...[/bold blue]",
+                spinner="dots",
+            ):
+                # This list tools is necessary to ensure the MCP servers are pre-initialized rather than waiting for the first list call.
+                await mcp_client.list_tools()
+            # These clears and initialization are required because initializing the MCP servers outputs stuff to console from other processes.
+            click.clear()
+
+            initial_message(working_dir, console, config.agent_config)
+            agent = Agent(
+                mcp_client=mcp_client,
+                config=config.agent_config,
+                working_directory=working_dir,
+                mcp_instructions=mcp_instructions,
+            )
+            while True:
+                try:
+                    user_input = await asyncio.get_event_loop().run_in_executor(
+                        None, lambda: Prompt.ask("[bold green]>[/bold green]")
+                    )
+                    user_input = user_input.strip()
+                    if user_input.lower() in ["quit", "exit"]:
+                        break
+                    if not user_input.strip():
+                        continue
+                    await process_user_message(user_input, agent)
+
+                except KeyboardInterrupt:
+                    break
+                except EOFError:
+                    break
+                except Exception as e:
+                    console.print(f"\n[red]Error: {e}[/red]")
+                    break
+
+    try:
+        asyncio.run(setup_and_chat())
+    finally:
+        console.print("[green]Goodbye![/green]")
 
 
-async def process_user_message(
-    user_input: str, mcp_client: Client, agent: Agent
-) -> None:
+async def process_user_message(user_input: str, agent: Agent) -> None:
     """Process user message using EventBus and TurnContext."""
     with console.status(
         "working... (0.0s ctrl+c to interrupt)", spinner="dots"
@@ -161,10 +158,9 @@ async def process_user_message(
         try:
             async with TurnContext(event_bus) as turn:
                 turn.emit_event(UserMessage(content=user_input))
-                async with mcp_client:
-                    async for event in agent.turn(user_input):
-                        turn.emit_event(convert_data_to_event(event))
-                        await asyncio.sleep(0)
+                async for event in agent.turn(user_input):
+                    turn.emit_event(convert_data_to_event(event))
+                    await asyncio.sleep(0)
         finally:
             status_task.cancel()
             with suppress(asyncio.CancelledError):

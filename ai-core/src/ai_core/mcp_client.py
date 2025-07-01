@@ -102,7 +102,7 @@ async def initialize_mcp_client(
     if enabled_native_servers:
         initial_string = "## Native MCP Servers\nThese servers are provided by default by TinkerTasker.\n\n"
         combined_instructions = initial_string + combined_instructions
-    
+
     return client, combined_instructions
 
 

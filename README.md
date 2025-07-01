@@ -16,7 +16,10 @@
 
 ```bash
 uv tool install <github repo url>
+uv run tinkertasker-setup
 ```
+
+`uv run tinkertasker-setup` is required to install the required dependencies for the native web MCP server.
 
 3. Run the CLI. It will use the current directory as the working directory which enables file editing. **Use at your own risk!**
 
@@ -118,3 +121,8 @@ The project includes a VSCode workspace file (`TinkerTasker.code-workspace`) tha
    ```
 
 The project uses a Makefile to manage multiple Python packages (`ai-core` and `cli-ux`). Each command automatically handles virtual environments and runs the specified operations across all packages.
+
+
+# Attributions
+
+This project uses Crawl4AI (https://github.com/unclecode/crawl4ai) for web data extraction.

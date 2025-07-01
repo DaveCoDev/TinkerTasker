@@ -67,22 +67,31 @@ class Agent:
         self, tool_call: ChatCompletionMessageToolCallParam
     ) -> ChatCompletionToolMessageParam:
         """Parses the tool call and executes it using the MCP client."""
-        tool_args = tool_call["function"]["arguments"]
-        tool_args = json.loads(tool_args)
+        try:
+            tool_args = tool_call["function"]["arguments"]
+            tool_args = json.loads(tool_args)
 
-        result = await self.mcp_client.call_tool(
-            name=tool_call["function"]["name"],
-            arguments=tool_args,
-            timeout=5,
-        )
-        content = parse_tool_call_content(result)
+            result = await self.mcp_client.call_tool(
+                name=tool_call["function"]["name"],
+                arguments=tool_args,
+                timeout=60,
+            )
+            content = parse_tool_call_content(result)
 
-        tool_message = ChatCompletionToolMessageParam(
-            role="tool",
-            content=content,
-            tool_call_id=tool_call["id"],
-        )
-        return tool_message
+            tool_message = ChatCompletionToolMessageParam(
+                role="tool",
+                content=content,
+                tool_call_id=tool_call["id"],
+            )
+            return tool_message
+        except Exception as e:
+            error_message = f"Error executing tool call '{tool_call['function']['name']}': {e!s}\nEither try to call the tool again with different arguments to do something else."
+            tool_message = ChatCompletionToolMessageParam(
+                role="tool",
+                content=error_message,
+                tool_call_id=tool_call["id"],
+            )
+            return tool_message
 
     async def turn(self, user_utterance: str) -> AsyncGenerator[MessageData, None]:
         """

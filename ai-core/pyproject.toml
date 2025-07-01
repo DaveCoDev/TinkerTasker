@@ -5,14 +5,18 @@ description = "AI Logic for TinkerTasker"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "fastmcp>=2.8,<3.0",
+    "fastmcp>=2.9,<2.10",
     "litellm>=1.73,<2.0",
     "loguru>=0.7.0,<1.0",
-    "openai>=1.91,<2.0",
+    "markitdown[docx,outlook,pptx,xlsx]==0.1.2",
+    "not-again-ai[data]==0.21.0",
+    "openai>=1.93,<2.0",
+    "pdfplumber>=0.11,<1.0",
     "pendulum>=3.1,<4.0",
     "pydantic>=2.11,<3.0",
     "pydantic-extra-types>=2.10,<3.0",
     "python-liquid>=2.0,<3.0",
+    "tiktoken>=0.9.0,<1.0",
 ]
 
 [tool.uv]

@@ -6,6 +6,8 @@ from pathlib import Path
 
 from fastmcp import Context, FastMCP
 
+from ai_core.mcp_servers.filesystem.convert_bin_files import bytes_to_str
+
 
 async def get_working_dir(ctx: Context, cwd_fallback: bool = False) -> Path | str:
     """Get the working directory as the first root directory configured in the MCP client.
@@ -130,6 +132,44 @@ mcp = FastMCP(
 )
 
 
+def format_file_content_with_lines(
+    content: str, start_line: int = 1, end_line: int = -1
+) -> str:
+    """Format file content with line numbers for a given range.
+
+    Args:
+        content: The file content as a string
+        start_line: The starting line number to view (1-indexed, inclusive)
+        end_line: The ending line number to view (1-indexed, inclusive). Use -1 to read to the end
+
+    Returns:
+        Formatted string with line numbers and content
+    """
+    lines = content.splitlines()
+
+    if not lines:
+        return "The file is empty"
+
+    # Convert to 0-indexed
+    start_idx = max(0, start_line - 1)
+    end_idx = len(lines) if end_line == -1 else min(len(lines), end_line)
+    selected_lines = lines[start_idx:end_idx]
+    line_offset = start_idx
+
+    # Keeps the line numbers aligned
+    max_line_num = line_offset + len(selected_lines)
+    width = len(str(max_line_num))
+
+    numbered_lines = []
+    for i, line in enumerate(selected_lines):
+        line_num = line_offset + i + 1
+        numbered_lines.append(f"{line_num:>{width}}→{line}")
+
+    lines_read = len(selected_lines)
+    result = f"Read {lines_read} lines\n" + "\n".join(numbered_lines)
+    return result
+
+
 @mcp.tool
 async def view(
     ctx: Context,
@@ -159,31 +199,17 @@ async def view(
             return format_directory_tree(resolved_path, max_depth=1)
 
         content = resolved_path.read_text(encoding="utf-8")
-        lines = content.splitlines()
+        return format_file_content_with_lines(content, start_line, end_line)
 
-        if not lines:
-            return "The file is empty"
-
-        # Convert to 0-indexed
-        start_idx = max(0, start_line - 1)
-        end_idx = len(lines) if end_line == -1 else min(len(lines), end_line)
-        selected_lines = lines[start_idx:end_idx]
-        line_offset = start_idx
-
-        # Keeps the line numbers aligned
-        max_line_num = line_offset + len(selected_lines)
-        width = len(str(max_line_num))
-
-        numbered_lines = []
-        for i, line in enumerate(selected_lines):
-            line_num = line_offset + i + 1
-            numbered_lines.append(f"{line_num:>{width}}→{line}")
-
-        lines_read = len(selected_lines)
-        result = f"Read {lines_read} lines\n" + "\n".join(numbered_lines)
-        return result
     except UnicodeDecodeError:
-        return f"Error: This tool cannot read binary files. The file appears to be a binary {resolved_path.suffix} file"
+        try:
+            file_bytes = resolved_path.read_bytes()
+            content = await bytes_to_str(
+                file_bytes=file_bytes, filename=str(resolved_path)
+            )
+            return format_file_content_with_lines(content, start_line, end_line)
+        except Exception as e:
+            return f"Error converting binary file {resolved_path}: {e!s}"
     except PermissionError:
         return f"Error: Permission denied: {resolved_path}"
     except Exception as e:

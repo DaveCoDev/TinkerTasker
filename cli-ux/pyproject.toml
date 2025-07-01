@@ -16,6 +16,7 @@ dependencies = [
 
 [project.scripts]
 tinkertasker = "cli_ux.main:chat"
+tinkertasker-setup = "cli_ux.setup:main"
 
 [tool.uv]
 package = true

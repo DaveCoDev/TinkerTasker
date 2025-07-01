@@ -12,6 +12,7 @@ ifneq ($(wildcard pyproject.toml),)
 # Single package targets
 install:
 	uv lock --upgrade && uv sync $(UV_SYNC_INSTALL_ARGS)
+	@if grep -q "crawl4ai" pyproject.toml 2>/dev/null; then crawl4ai-setup; fi
 
 lint:
 	uvx ruff check --no-cache --fix .

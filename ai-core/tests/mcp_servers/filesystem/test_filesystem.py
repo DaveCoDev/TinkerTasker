@@ -28,11 +28,11 @@ async def filesystem_test_setup():
 # region view
 
 
-async def call_view_and_check(client, path, expected_text, view_range=None):
+async def call_view_and_check(
+    client, path, expected_text, start_line: int = 1, end_line: int = -1
+):
     """Helper to call view tool and check the expected result."""
-    params = {"path": path}
-    if view_range is not None:
-        params["view_range"] = view_range
+    params = {"path": path, "start_line": start_line, "end_line": end_line}
 
     result = await client.call_tool("view", params)
     assert result == [TextContent(type="text", text=expected_text)]
@@ -43,7 +43,9 @@ async def test_view_file():
     async with filesystem_test_setup() as (tmpdir, client):
         test_file = Path(tmpdir) / "test.txt"
         test_file.write_text("Hello, World!")
-        await call_view_and_check(client, str(test_file), "1→Hello, World!")
+        await call_view_and_check(
+            client, str(test_file), "Read 1 lines\n1→Hello, World!"
+        )
 
 
 async def test_view_file_relative_path():
@@ -51,7 +53,7 @@ async def test_view_file_relative_path():
     async with filesystem_test_setup() as (tmpdir, client):
         test_file = Path(tmpdir) / "test.txt"
         test_file.write_text("Hello, World!")
-        await call_view_and_check(client, "test.txt", "1→Hello, World!")
+        await call_view_and_check(client, "test.txt", "Read 1 lines\n1→Hello, World!")
 
 
 async def test_view_range():
@@ -59,7 +61,9 @@ async def test_view_range():
     async with filesystem_test_setup() as (tmpdir, client):
         test_file = Path(tmpdir) / "multiline.txt"
         test_file.write_text("Line 1\nLine 2\nLine 3")
-        await call_view_and_check(client, str(test_file), "2→Line 2", view_range=[2, 2])
+        await call_view_and_check(
+            client, str(test_file), "Read 1 lines\n2→Line 2", start_line=2, end_line=2
+        )
 
 
 async def test_view_start_range():
@@ -70,7 +74,11 @@ async def test_view_start_range():
 
         # Start at -1 should be treated as 0 (start of file) due to max(0, start_line - 1)
         await call_view_and_check(
-            client, str(test_file), "1→Line 1\n2→Line 2", view_range=[-1, 2]
+            client,
+            str(test_file),
+            "Read 2 lines\n1→Line 1\n2→Line 2",
+            start_line=-1,
+            end_line=2,
         )
 
 
@@ -82,7 +90,11 @@ async def test_view_end_range():
 
         # End at -1 should read to end of file
         await call_view_and_check(
-            client, str(test_file), "3→Line 3\n4→Line 4\n5→Line 5", view_range=[3, -1]
+            client,
+            str(test_file),
+            "Read 3 lines\n3→Line 3\n4→Line 4\n5→Line 5",
+            start_line=3,
+            end_line=-1,
         )
 
 
@@ -94,7 +106,11 @@ async def test_view_zero_range():
 
         # Start at 0 should be treated as max(0, 0-1) = 0, so shows line 1
         await call_view_and_check(
-            client, str(test_file), "1→Line 1\n2→Line 2", view_range=[0, 2]
+            client,
+            str(test_file),
+            "Read 2 lines\n1→Line 1\n2→Line 2",
+            start_line=0,
+            end_line=2,
         )
 
 
@@ -107,7 +123,7 @@ async def test_view_binary_file():
         await call_view_and_check(
             client,
             str(binary_file),
-            "Error: This tool cannot read binary files. The file appears to be a binary .bin file",
+            "Read 1 lines\n1→The filetype `bin` is not supported or the file itself is malformed: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte",
         )
 
 
@@ -123,7 +139,8 @@ async def test_view_directory():
         (subdir / "nested_file.json").write_text('{"key": "value"}')
 
         # Expected tree structure output
-        expected_text = f"""- {base_dir}/
+        expected_text = f"""Listed 3 paths
+- {base_dir}/
   - file1.txt
   - file2.py
   - subdir/"""
@@ -136,13 +153,85 @@ async def test_view_directory_empty():
     async with filesystem_test_setup() as (tmpdir, client):
         empty_dir = Path(tmpdir) / "empty_dir"
         empty_dir.mkdir()
-        expected_text = f"- {empty_dir}/"
+        expected_text = "The directory is empty"
         await call_view_and_check(client, str(empty_dir), expected_text)
+
+
+async def test_view_pdf_file():
+    """Test viewing a PDF file converts it to readable text."""
+    async with filesystem_test_setup() as (tmpdir, client):
+        sample_files_dir = Path(__file__).parent / "sample_files"
+        sample_pdf = sample_files_dir / "Sample Doc.pdf"
+        test_pdf = Path(tmpdir) / "test.pdf"
+        test_pdf.write_bytes(sample_pdf.read_bytes())
+
+        expected_text = """Read 4 lines
+1→Hello!
+2→This is some sample Word document content
+3→Across four lines of text
+4→The END!"""
+
+        await call_view_and_check(client, "test.pdf", expected_text)
+
+
+async def test_view_docx_file():
+    """Test viewing a DOCX file converts it to readable text."""
+    async with filesystem_test_setup() as (tmpdir, client):
+        sample_files_dir = Path(__file__).parent / "sample_files"
+        sample_docx = sample_files_dir / "Sample Doc.docx"
+        test_docx = Path(tmpdir) / "test.docx"
+        test_docx.write_bytes(sample_docx.read_bytes())
+
+        expected_text = """Read 7 lines
+1→Hello!
+2→
+3→This is some sample Word document content
+4→
+5→Across four lines of text
+6→
+7→The END!"""
+
+        await call_view_and_check(client, "test.docx", expected_text)
+
+
+async def test_view_pdf_file_with_line_range():
+    """Test viewing a PDF file with specific line range."""
+    async with filesystem_test_setup() as (tmpdir, client):
+        sample_files_dir = Path(__file__).parent / "sample_files"
+        sample_pdf = sample_files_dir / "Sample Doc.pdf"
+        test_pdf = Path(tmpdir) / "test.pdf"
+        test_pdf.write_bytes(sample_pdf.read_bytes())
+
+        expected_text = """Read 2 lines
+2→This is some sample Word document content
+3→Across four lines of text"""
+
+        await call_view_and_check(
+            client, "test.pdf", expected_text, start_line=2, end_line=3
+        )
+
+
+async def test_view_docx_file_with_line_range():
+    """Test viewing a DOCX file with specific line range."""
+    async with filesystem_test_setup() as (tmpdir, client):
+        sample_files_dir = Path(__file__).parent / "sample_files"
+        sample_docx = sample_files_dir / "Sample Doc.docx"
+        test_docx = Path(tmpdir) / "test.docx"
+        test_docx.write_bytes(sample_docx.read_bytes())
+
+        expected_text = """Read 2 lines
+2→
+3→This is some sample Word document content"""
+
+        await call_view_and_check(
+            client, "test.docx", expected_text, start_line=2, end_line=3
+        )
 
 
 # endregion
 
 
+# region insert
 async def test_insert():
     """Test inserting a line into a file with proper width alignment."""
     async with filesystem_test_setup() as (tmpdir, client):
@@ -158,7 +247,7 @@ async def test_insert():
 
         # Check that the insert was successful and shows proper width alignment
         # Line numbers should be right-aligned to width of largest line number (12)
-        expected_output = f"""Successfully inserted text at line 8 in {test_file}:
+        expected_output = f"""Successfully inserted text at line 8 in {test_file}
  7→Line 7
  8→Line 8
  9→Inserted Line
@@ -185,7 +274,7 @@ async def test_insert_beginning():
         )
 
         # Check that the insert was successful and shows context from beginning
-        expected_output = f"""Successfully inserted text at line 0 in {test_file}:
+        expected_output = f"""Successfully inserted text at line 0 in {test_file}
 1→New First Line
 2→Line 1
 3→Line 2"""
@@ -207,7 +296,7 @@ async def test_insert_past_end():
         )
 
         # Should be clamped to the end of the file (after line 3, so at position 3)
-        expected_output = f"""Successfully inserted text at line 3 in {test_file}:
+        expected_output = f"""Successfully inserted text at line 3 in {test_file}
 2→Line 2
 3→Line 3
 4→Appended Line"""
@@ -255,6 +344,11 @@ async def test_insert_outside_workdir():
         finally:
             if outside_file.exists():
                 outside_file.unlink()
+
+
+# endregion
+
+# region str_replace
 
 
 async def test_str_replace():
@@ -326,7 +420,7 @@ async def test_str_replace_replace_all():
             },
         )
 
-        expected_output = f"""Successfully replaced 4 occurrences in {test_file}:
+        expected_output = f"""Successfully replaced 4 occurrences in {test_file}
 1→Hi World
 2→Hi Python
 3→This is Hi"""
@@ -377,6 +471,11 @@ async def test_str_replace_nonexistent_file():
         expected_output = f"Error: File not found at {nonexistent_file}"
         assert result == [TextContent(type="text", text=expected_output)]
         assert not nonexistent_file.exists()
+
+
+# endregion
+
+# region create
 
 
 async def test_create_new_file():
@@ -471,3 +570,6 @@ async def test_create_file_outside_workdir():
         )
         assert result == [TextContent(type="text", text=expected_output)]
         assert not outside_file.exists()
+
+
+# endregion

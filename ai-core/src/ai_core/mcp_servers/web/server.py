@@ -61,6 +61,9 @@ async def fetch(url: str) -> str:
     url_result = await process_url(url)
     markdown = _truncate_str(url_result.markdown, max_len=8000)
 
+    # Compute size of original markdown content
+    size = len(url_result.markdown.encode("utf-8"))
+
     # Format output according to expected structure, limit to first 100 links
     links_section = ""
     if url_result.links:
@@ -73,7 +76,8 @@ async def fetch(url: str) -> str:
             links_xml = "\n".join(f"<link>{link.url}</link>" for link in filtered_links)
             links_section = f"<links>\n{links_xml}\n</links>"
 
-    formatted_output = f"""<website>
+    formatted_output = f"""Received content ({size / 1024:.1f}KB)
+<website>
 <url>{url_result.url}</url>
 <content>{markdown}</content>
 {links_section}

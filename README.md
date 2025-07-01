@@ -3,29 +3,28 @@
 </p>
 
 # Quickstart
-1. Pre-requisites
-  - Install [uv](https://docs.astral.sh/uv/getting-started/installation/) to manage Python environments
-  - Install [Ollama](https://github.com/ollama/ollama?tab=readme-ov-file#ollama) (or another LLM provider - detailed instructions coming soon)
-  - Pull the default model from Ollama:
-    ```bash
-    ollama run qwen3:30b-a3b-q4_K_M
-    ```
-    You can configure other models in the `config.yaml` that is generated (the CLI will show you a path).
+1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
-2. Install as a uv tool
+2. Install [Ollama](https://github.com/ollama/ollama?tab=readme-ov-file#ollama)
 
-```bash
-uv tool install <github repo url>
-uv run tinkertasker-setup
-```
+3. Pull the default model from Ollama:
+   ```bash
+   ollama run qwen3:30b-a3b-q4_K_M
+   ```
+   You can configure other models in the `config.yaml` that is generated (TinkerTasker will tell you the path).
+4. Install as a uv tool
+   ```bash
+   uv tool install <github repo url>
+   uv run tinkertasker-setup
+   ```
 
-`uv run tinkertasker-setup` is required to install the required dependencies for the native web MCP server.
+   `uv run tinkertasker-setup` is required to install the required dependencies for the native web MCP server and may take a minute.
 
-3. Run the CLI. It will use the current directory as the working directory which enables file editing. **Use at your own risk!**
+5. Run the CLI. It will use the current directory as the working directory which enables file editing. **Use at your own risk!**
 
-```bash
-uv run tinkertasker
-```
+   ```bash
+   tinkertasker
+   ```
 
 
 # Configuration Guide

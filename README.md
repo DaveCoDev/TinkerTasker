@@ -18,14 +18,20 @@
    uv run tinkertasker-setup
    ```
 
-   `uv run tinkertasker-setup` is required to install the required dependencies for the native web MCP server and may take a minute.
-
 5. Run the CLI. It will use the current directory as the working directory which enables file editing. **Use at your own risk!**
 
    ```bash
    tinkertasker
    ```
 
+## Updating
+
+```bash
+uv tool install <github url> --force
+```
+
+* **WARNING:** Currently your configuration will likely be reset when updating.
+* Running `uv run tinkertasker-setup` again should not be currently necessary.
 
 # Configuration Guide
 <todo later this will be how to customize the project>
@@ -120,6 +126,11 @@ The project includes a VSCode workspace file (`TinkerTasker.code-workspace`) tha
    ```
 
 The project uses a Makefile to manage multiple Python packages (`ai-core` and `cli-ux`). Each command automatically handles virtual environments and runs the specified operations across all packages.
+
+
+# Roadmap
+
+To be determined based on interest.
 
 
 # Attributions

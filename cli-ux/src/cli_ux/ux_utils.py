@@ -29,6 +29,7 @@ def initial_message(
             "[bold #8BC6FC]Welcome to TinkerTasker![/bold #8BC6FC]\n\n"
             f"[dim]Config: {get_config_path()} (restart if changed)[/dim]\n"
             f"[dim]Working Directory: {working_dir} (start from a different dir to change)[/dim]\n"
+            f"[dim]LiteLLM Model Name: {agent_config.llm_config.model_name}[/dim]\n"
             f"{mcp_info}\n\n"
             "[dim]Press CTRL+C twice to quit.[/dim]",
             title="TinkerTasker",

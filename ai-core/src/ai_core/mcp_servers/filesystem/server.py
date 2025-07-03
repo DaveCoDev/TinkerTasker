@@ -18,7 +18,13 @@ async def get_working_dir(ctx: Context, cwd_fallback: bool = False) -> Path | st
     roots = await ctx.list_roots()
 
     if roots and roots[0].uri and roots[0].uri.path:
-        return Path(roots[0].uri.path)
+        uri_path = roots[0].uri.path
+        # Handle URI path conversion more robustly for Windows
+        # URI paths often come as /C:/path/to/dir on Windows
+        if uri_path.startswith('/') and len(uri_path) > 1 and uri_path[2] == ':':
+            # Convert /C:/path to C:/path for Windows
+            uri_path = uri_path[1:]
+        return Path(uri_path).resolve()
     elif cwd_fallback:
         return Path.cwd()
 

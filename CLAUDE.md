@@ -1,6 +1,18 @@
 # Project README
 @README.md
 
+
+# Project Structure
+TinkerTasker is broken up into two main components:
+**ai-core**: Contains the core AI functionality, including the MCP servers for filesystem and web.
+This is the `pyproject.toml` for the package
+@./ai-core/pyproject.toml
+
+**cli-ux**: Provides the command-line interface for interacting with TinkerTasker.
+This is the `pyproject.toml` for the package
+@./cli-ux/pyproject.toml
+
+
 # Core Design Principles
 ### Ruthless Simplicity
 - **KISS principle taken to heart**: Keep everything as simple as possible, but no simpler
@@ -48,12 +60,14 @@ Push for extreme simplicity in these areas:
 - Favor clarity over cleverness
 - The best code is often the simplest
 
+
 ## Other Guidelines
 - Do not use emojis unless asked.
 - Do not include exceessive print and logging statements.
 - You should only use the dependencies in the provided dependency files. If you need to add a new one, ask first.
 - Do not automatically run scripts, tests, or move/rename/delete files. Ask the user to do these tasks.
 - Read in the entirety of files to get the full context
+
 
 ## Python Development Rules
 - I am using Python version 3.12 on Ubuntu, uv as the package and project manager, and Ruff as a linter and code formatter.

@@ -2,6 +2,10 @@
 <p align="center">TinkerTasker is an open-source, local-first agent that runs in your terminal.
 </p>
 
+<div align="center">
+  <img src="assets/demo.gif" alt="TinkerTasker Demo" />
+</div>
+
 # Quickstart
 1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
@@ -33,8 +37,65 @@ uv tool install <github url> --force
 * **WARNING:** Currently your configuration will likely be reset when updating.
 * Running `uv run tinkertasker-setup` again should not be currently necessary.
 
+
 # Configuration Guide
-<todo later this will be how to customize the project>
+
+TinkerTasker uses a YAML configuration file that's automatically created on first run. The configuration is stored at:
+
+- **Windows:** `%APPDATA%\tinkertasker\config.yaml`
+- **Linux** `~/.config/tinkertasker/config.yaml`
+
+
+### LLM Configuration
+
+```yaml
+llm_config:
+  model_name: "ollama_chat/qwen3:30b-a3b-q4_K_M"  # LiteLLM model to use
+  max_completion_tokens: 4000 # Max tokens per response
+  ... # Any other LiteLLM parameters can be added here
+```
+
+### Agent Configuration
+
+```yaml
+agent_config:
+  max_steps: 25 # Maximum steps per agent turn
+  
+  prompt_config:
+    knowledge_cutoff: "2024-10" # Knowledge cutoff date - set this depending on the model used
+    timezone: "America/New_York" # Timezone for time in prompts
+  
+  native_mcp_servers:
+    - filesystem # File system operations
+    - web # Web browsing and search
+
+  mcp_servers: [] # External MCP servers (see below)
+```
+
+### UX Configuration
+
+```yaml
+ux_config:
+  number_tool_lines: 1 # Lines to show for tool outputs (-1 for all)
+  max_arg_value_length: 100 # Max length for argument values in display
+```
+
+## Adding External MCP Servers
+
+You can add external MCP servers to extend TinkerTasker's capabilities. For example:
+
+```yaml
+agent_config:
+  mcp_servers:
+    - identifier: "context7"
+      command: "npx"
+      args: ["-y", "@upstash/context7-mcp"]
+      prefix: null # Optional prefix for tools
+```
+
+### Configuration Reset
+
+If your configuration becomes corrupted or you want to start fresh, simply delete the config file. TinkerTasker will recreate it with default values on the next run.
 
 
 # Project Structure
@@ -62,6 +123,7 @@ uv tool install <github url> --force
 
 - [uv](https://docs.astral.sh/uv/#installation) for Python package management
 - make
+  - On Windows, you can install [winget](https://github.com/microsoft/winget-cli) then run `winget install ezwinports.make -e`
 - [ollama](https://github.com/ollama/ollama?tab=readme-ov-file#ollama)
 
 

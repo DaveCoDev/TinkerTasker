@@ -18,7 +18,7 @@
    You can configure other models in the `config.yaml` that is generated (TinkerTasker will tell you the path).
 4. Install as a uv tool
    ```bash
-   uv tool install <github repo url>
+   uv tool install git+https://github.com/DaveCoDev/TinkerTasker#subdirectory=cli-ux
    uv run tinkertasker-setup
    ```
 

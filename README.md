@@ -6,6 +6,8 @@
   <img src="assets/demo.gif" alt="TinkerTasker Demo" />
 </div>
 
+A explanation of how TinkerTasker works is available on [YouTube](https://www.youtube.com/watch?v=CtRQHQe4PCA&t)!
+
 # Quickstart
 1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
@@ -31,7 +33,7 @@
 ## Updating
 
 ```bash
-uv tool install <github url> --force
+uv tool install git+https://github.com/DaveCoDev/TinkerTasker#subdirectory=cli-ux --force
 ```
 
 * **WARNING:** Currently your configuration will likely be reset when updating.
